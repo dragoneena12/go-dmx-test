@@ -1,0 +1,47 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"go.bug.st/serial"
+)
+
+func main() {
+	mode := &serial.Mode{
+		BaudRate: 250000,
+		DataBits: 8,
+		StopBits: serial.TwoStopBits,
+	}
+	port, err := serial.Open("/dev/ttyAMA0", mode)
+	if err != nil {
+		log.Fatal(err)
+	}
+	data := make([]byte, 513)
+	data[0] = 0
+
+	iter := 0
+	for {
+		iter = (iter + 1) % 60
+		for i := 0; i < 60; i++ {
+			if i == iter {
+				data[3*i+1] = 100
+				data[3*i+2] = 0
+				data[3*i+3] = 0
+			} else {
+				data[3*i+1] = 0
+				data[3*i+2] = 0
+				data[3*i+3] = 0
+			}
+		}
+		port.Break(8800 * time.Microsecond)
+		time.Sleep(8000 * time.Microsecond)
+		n, err := port.Write(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Sent %v bytes\n", n)
+		time.Sleep(100 * time.Millisecond)
+	}
+}
